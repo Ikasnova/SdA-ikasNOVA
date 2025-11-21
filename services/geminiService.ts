@@ -1,5 +1,3 @@
-
-
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { EducationalStage, LearningSituationData, Language } from "../types";
 
@@ -304,7 +302,8 @@ export const translateLearningSituation = async (
 export const generateFromUploadedFile = async (
   base64Data: string,
   mimeType: string,
-  language: Language
+  language: Language,
+  stage: EducationalStage
 ): Promise<LearningSituationData | null> => {
   try {
     const apiKey = process.env.API_KEY;
@@ -316,15 +315,23 @@ export const generateFromUploadedFile = async (
 
     const systemInstruction = isEu
       ? `Zure zeregina da irudi edo PDF honetatik Ikaskuntza Egoera baten datuak ateratzea eta JSON formatuan egituratzea.
-         Jatorrizko testua beste hizkuntza batean badago, itzuli ${langName}ra.
-         Datu bat falta bada, saiatu testuinguruaren arabera ondorioztatzen edo hutsik utzi.`
+         
+         GARRANTZITSUA:
+         1. Egokitu edukia Nafarroako Foru Komunitateko curriculum ofizialera (${stage} etapa).
+         2. Erabili LOMLOE terminologia ofiziala (Oinarrizko jakintzak, Konpetentzia espezifikoak, Ebaluazio irizpideak...).
+         3. Jatorrizko dokumentuak beste formatu bat badu, eraldatu edukiak txantiloi honetako gelaxketara egokitzeko.
+         4. Irteera ${langName}z izan behar da.`
       : `Tu misión es extraer los datos de esta Situación de Aprendizaje (imagen o PDF) y estructurarlos en el formato JSON requerido.
-         Si el texto original está en otro idioma, tradúcelo al ${langName}.
-         Si falta algún dato, intenta inferirlo del contexto o déjalo vacío si no hay información suficiente.`;
+         
+         IMPORTANTE:
+         1. ADAPTA el contenido a la normativa del currículo oficial de la Comunidad Foral de Navarra (LOMLOE) para la etapa: ${stage}.
+         2. Usa la terminología oficial (Saberes básicos, Competencias específicas, Criterios de evaluación...).
+         3. Si el documento original tiene una estructura antigua o diferente, REFORMULA y REUBICA el contenido para que encaje perfectamente en las celdas de este esquema oficial.
+         4. Traduce todo al ${langName}.`;
 
     const prompt = isEu 
-        ? "Aztertu dokumentu hau eta bete JSON fitxategia dagokion informazioarekin."
-        : "Analiza este documento adjunto y rellena el JSON con la información correspondiente.";
+        ? "Aztertu dokumentua, egokitu Nafarroako curriculumera eta bete JSON fitxategia."
+        : "Analiza el documento, adapta el contenido al currículo de Navarra y rellena el JSON.";
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",

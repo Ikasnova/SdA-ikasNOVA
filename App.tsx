@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import StageSelector from './components/StageSelector';
 import InputForm from './components/InputForm';
@@ -48,6 +47,11 @@ const App: React.FC = () => {
 
   // Handle File Upload
   const handleFileUpload = async (file: File) => {
+      if (!stage) {
+        setError(language === 'es' ? "Error: Etapa no seleccionada" : "Errorea: Etapa ez da hautatu");
+        return;
+      }
+      
       setMode('upload');
       setLoading(true);
       setError(null);
@@ -56,7 +60,7 @@ const App: React.FC = () => {
           const base64 = await fileToBase64(file);
           const mimeType = file.type;
 
-          const result = await generateFromUploadedFile(base64, mimeType, language);
+          const result = await generateFromUploadedFile(base64, mimeType, language, stage);
           if (result) {
               setGeneratedData(result);
               setIsEditing(true);
@@ -437,21 +441,10 @@ ${d.bibliography}
       <nav className="bg-gradient-to-r from-white from-20% via-[#e6eef5] to-brand-dark py-4 px-6 shadow-xl no-print sticky top-0 z-50 border-b-4 border-brand-teal">
         <div className="max-w-[98%] w-full mx-auto flex flex-col lg:flex-row items-center justify-between relative gap-4">
           
-          {/* Left: Logo (Exact Image) */}
+          {/* Left: Logo (Updated to use Arvo font via serif class) */}
           <div className="z-10 w-full lg:w-1/3 flex justify-center lg:justify-start">
-             <div className="cursor-pointer" onClick={handleReset}>
-                 <img 
-                    src="/logo.png" 
-                    alt="Ikasnova Logo" 
-                    className="h-12 md:h-16 object-contain"
-                    onError={(e) => {
-                        // If image fails, hide it and show simple fallback text
-                        e.currentTarget.style.display = 'none';
-                        const fb = document.getElementById('logo-fallback');
-                        if(fb) fb.style.display = 'flex';
-                    }}
-                />
-                <div id="logo-fallback" className="hidden flex items-baseline text-brand-dark">
+             <div className="cursor-pointer flex items-center gap-2" onClick={handleReset}>
+                <div className="flex items-baseline text-brand-dark">
                     <span className="font-serif text-4xl font-bold tracking-tighter">ikas</span>
                     <span className="font-serif text-4xl font-black tracking-tighter uppercase">NOVA</span>
                 </div>
