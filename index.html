@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ikasnova GenAI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Roboto Condensed"', 'sans-serif'],
+            },
+            colors: {
+              brand: {
+                main: '#6080a3',      // Principal 1 (Azul grisáceo)
+                teal: '#3eb7ae',      // Principal 2 (Turquesa)
+                blue: '#277cd4',      // Principal 3 (Azul brillante)
+                dark: '#2C3E50',      // Elegante Oscuro (Antracita)
+                black: '#1a1a1a',     // Negro Puro
+                light: '#f5f7fa',     // Fondo Claro
+                bg: '#f8fafb',        // Fondo Alternativo
+                border: '#E8EFF4'     // Bordes
+              }
+            },
+            screens: {
+              'print': {'raw': 'print'},
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap');
+      body {
+        font-family: 'Roboto Condensed', sans-serif;
+        background-color: #f5f7fa;
+        color: #2C3E50;
+      }
+      /* Ensure breaks work for both Print and HTML2PDF */
+      .break-inside-avoid {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+      @media print {
+        body {
+          background-color: white;
+        }
+        .no-print {
+          display: none !important;
+        }
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.30.0"
+  }
+}
+</script>
+</head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
