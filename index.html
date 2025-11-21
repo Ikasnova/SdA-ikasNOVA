@@ -23,7 +23,7 @@
                 black: '#1a1a1a',     // Negro Puro
                 light: '#f5f7fa',     // Fondo Claro
                 bg: '#f8fafb',        // Fondo Alternativo
-                border: '#E8EFF4'     // Bordes
+                border: '#cbd5e1'     // Bordes más visibles para tablas
               }
             },
             screens: {
@@ -35,22 +35,57 @@
     </script>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Arvo:ital,wght@0,400;0,700;1,400;1,700&family=Roboto+Condensed:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap');
+      
       body {
         font-family: 'Roboto Condensed', sans-serif;
         background-color: #f5f7fa;
         color: #2C3E50;
       }
-      /* Ensure breaks work for both Print and HTML2PDF */
+
+      /* PDF / Print Optimizations */
       .break-inside-avoid {
-        break-inside: avoid;
-        page-break-inside: avoid;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
       }
+      
+      .break-after-avoid {
+        break-after: avoid !important;
+        page-break-after: avoid !important;
+      }
+
+      /* Modern Table Styles for Print */
+      .modern-table-grid {
+        display: grid;
+        border: 1px solid #2C3E50;
+      }
+      
+      .modern-cell {
+        padding: 0.5rem;
+        border-right: 1px solid #cbd5e1;
+        border-bottom: 1px solid #cbd5e1;
+      }
+
+      .modern-header {
+        background-color: #f1f5f9;
+        font-weight: 700;
+        color: #2C3E50;
+        text-transform: uppercase;
+        font-size: 0.75rem; /* xs */
+        letter-spacing: 0.05em;
+      }
+
       @media print {
         body {
           background-color: white;
+          -webkit-print-color-adjust: exact; 
+          print-color-adjust: exact;
         }
         .no-print {
           display: none !important;
+        }
+        /* Ensure fonts render sharply */
+        * {
+          text-rendering: optimizeLegibility;
         }
       }
     </style>

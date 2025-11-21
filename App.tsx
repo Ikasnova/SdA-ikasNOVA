@@ -317,8 +317,9 @@ const App: React.FC = () => {
         
         setIsDownloading(true);
         
+        // Optimizations for ~3 pages and numbering
         const opt = {
-          margin: [10, 10, 10, 10],
+          margin: [10, 10, 15, 10], // Bottom margin increased for page numbers
           filename: `Ikasnova_SdA_${generatedData?.situationNumber || '00'}_${language}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { 
@@ -326,22 +327,43 @@ const App: React.FC = () => {
             useCORS: true, 
             logging: false,
             scrollY: 0, 
-            windowWidth: document.documentElement.offsetWidth 
+            windowWidth: document.documentElement.offsetWidth,
+            letterRendering: true,
           },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-          pagebreak: { mode: ['css', 'legacy'] }
+          pagebreak: { mode: ['css', 'legacy'], avoid: ['.break-inside-avoid'] }
         };
     
         try {
-            // @ts-ignore
-            await html2pdf().set(opt).from(element).save();
+            // Create PDF worker
+            const worker = html2pdf().set(opt).from(element).toPdf();
+            
+            // Access the raw PDF object to add page numbers
+            worker.get('pdf').then((pdf: any) => {
+                const totalPages = pdf.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPages; i++) {
+                    pdf.setPage(i);
+                    pdf.setFontSize(9);
+                    pdf.setTextColor(100, 100, 100);
+                    // Footer text: Just numbers as requested
+                    const text = `${i} / ${totalPages}`;
+                    const pageWidth = pdf.internal.pageSize.getWidth();
+                    const textWidth = pdf.getStringUnitWidth(text) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
+                    const x = (pageWidth - textWidth) / 2; // Center
+                    const y = pdf.internal.pageSize.getHeight() - 8; // 8mm from bottom
+                    pdf.text(text, x, y);
+                }
+            }).save();
+
         } catch (e) {
             console.error(e);
             alert("Error al generar PDF. Puede intentar usar la opción de impresión del navegador.");
-        } finally {
             setIsDownloading(false);
+        } finally {
+            // Reset download state after a delay (since save() is async but doesn't return a promise we can await perfectly in all versions)
+            setTimeout(() => setIsDownloading(false), 2000);
         }
-    }, 100);
+    }, 200);
   };
 
   const handleDownloadMarkdown = () => {
@@ -437,154 +459,175 @@ ${d.bibliography}
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-light text-brand-dark font-sans">
-      {/* Navbar - Modified with Gradient and Logo */}
-      <nav className="bg-gradient-to-r from-white from-20% via-[#e6eef5] to-brand-dark py-4 px-6 shadow-xl no-print sticky top-0 z-50 border-b-4 border-brand-teal">
-        <div className="max-w-[98%] w-full mx-auto flex flex-col lg:flex-row items-center justify-between relative gap-4">
+      {/* Navbar - Grid Layout to prevent overlap and improve structure */}
+      <nav className="bg-gradient-to-r from-white from-20% via-[#e6eef5] to-brand-dark py-3 px-6 shadow-xl no-print sticky top-0 z-50 border-b-4 border-brand-teal">
+        <div className="max-w-[98%] w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-y-4 gap-x-4 items-center">
           
-          {/* Left: Logo (Updated to use Arvo font via serif class) */}
-          <div className="z-10 w-full lg:w-1/3 flex justify-center lg:justify-start">
-             <div className="cursor-pointer flex items-center gap-2" onClick={handleReset}>
-                <div className="flex items-baseline text-brand-dark">
-                    <span className="font-serif text-4xl font-bold tracking-tighter">ikas</span>
-                    <span className="font-serif text-4xl font-black tracking-tighter uppercase">NOVA</span>
+          {/* Left: Logo */}
+          <div className="lg:col-span-3 flex justify-center lg:justify-start">
+             <div className="cursor-pointer flex items-center gap-2 group" onClick={handleReset}>
+                <div className="flex items-baseline text-brand-dark transition-transform group-hover:scale-105">
+                    <span className="font-serif text-3xl md:text-4xl font-bold tracking-tighter">ikas</span>
+                    <span className="font-serif text-3xl md:text-4xl font-black tracking-tighter uppercase">NOVA</span>
                 </div>
              </div>
           </div>
           
-          {/* Center: Title */}
-          <div className="z-0 w-full lg:w-auto text-center lg:absolute lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2">
-             <h1 className="text-xl md:text-2xl font-black text-brand-dark uppercase tracking-widest drop-shadow-sm whitespace-nowrap">
+          {/* Center: Title (Centered in grid) */}
+          <div className="lg:col-span-4 text-center flex justify-center items-center">
+             <h1 className="text-lg md:text-xl lg:text-2xl font-black text-brand-dark uppercase tracking-widest drop-shadow-sm leading-none">
                 {t.appTitle}
              </h1>
           </div>
           
-          {/* Right: Tools */}
-          <div className="z-10 w-full lg:w-1/3 flex items-center justify-center lg:justify-end space-x-2 flex-wrap">
-            {/* Language Toggle */}
-            <button 
-              onClick={toggleLanguage}
-              className="flex items-center space-x-2 bg-brand-black/30 hover:bg-brand-black/50 text-white px-3 py-2 rounded-sm border border-white/10 transition-all cursor-pointer group"
-              title="Aldatu hizkuntza / Cambiar idioma"
-            >
-              <Globe size={16} className="text-brand-teal group-hover:rotate-12 transition-transform" />
-              <div className="flex text-xs font-bold uppercase tracking-wider">
-                <span className={`transition-opacity ${language === 'es' ? 'opacity-100 text-white font-black' : 'opacity-50 text-gray-300'}`}>ES</span>
-                <span className="mx-1 text-gray-400">|</span>
-                <span className={`transition-opacity ${language === 'eu' ? 'opacity-100 text-white font-black' : 'opacity-50 text-gray-300'}`}>EU</span>
-              </div>
-            </button>
+          {/* Right: Tools - Two Rows Logic */}
+          <div className="lg:col-span-5 flex flex-col items-center lg:items-end gap-2">
+             
+             {/* ROW 1: Configuration, Status & Primary Actions */}
+             <div className="flex flex-wrap justify-center lg:justify-end items-center gap-2">
+                {/* Language Toggle */}
+                <button 
+                  onClick={toggleLanguage}
+                  className="flex items-center space-x-1 bg-white border border-gray-200 text-brand-dark px-2 py-1.5 rounded-sm hover:bg-gray-50 transition-all text-xs font-bold shadow-sm"
+                  title="Aldatu hizkuntza / Cambiar idioma"
+                >
+                  <Globe size={14} className="text-brand-teal" />
+                  <span>{language === 'es' ? 'ES' : 'EU'}</span>
+                </button>
 
-            {loading && mode === 'upload' && (
-                 <div className="px-3 py-2 rounded-sm bg-purple-600 text-white text-xs font-bold flex items-center uppercase tracking-widest shadow-md animate-pulse">
-                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    {t.navImporting}
-                 </div>
-            )}
-
-            {generatedData && (
-              <>
-                <div className="h-6 w-px bg-white/20 mx-1 hidden sm:block"></div>
-                
-                {/* AI Check Button */}
-                {isEditing && (
-                    <button
-                    onClick={handleAIReview}
-                    disabled={loading}
-                    className={`px-3 py-2 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border shadow-md ${
-                        loading
-                        ? 'bg-gray-600 text-gray-300 border-gray-500'
-                        : 'bg-brand-blue text-white border-brand-blue hover:bg-brand-blue/90'
-                    }`}
-                    >
-                    {loading ? (
-                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                {/* Import Status */}
+                {loading && mode === 'upload' && (
+                     <div className="px-2 py-1.5 rounded-sm bg-purple-600 text-white text-xs font-bold flex items-center uppercase tracking-widest shadow-md animate-pulse">
+                         <svg className="animate-spin -ml-1 mr-2 h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                    ) : (
-                        <>
-                        <Sparkles size={14} className="mr-2" />
-                        <span className="hidden xl:inline">{t.navCheck}</span>
-                        </>
-                    )}
-                    </button>
+                        {t.navImporting}
+                     </div>
                 )}
 
-                {/* Edit Mode Toggle */}
-                <button
-                  onClick={() => setIsEditing(!isEditing)}
-                  className={`px-3 py-2 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border ${
-                    isEditing 
-                      ? 'bg-brand-main text-white border-brand-main shadow-inner' 
-                      : 'bg-white/20 text-white border-white/30 hover:bg-white/30'
-                  }`}
-                  title={isEditing ? 'Guardar' : 'Editar'}
-                >
-                  {isEditing ? <Save size={14} /> : <Pencil size={14} />}
-                </button>
+                {generatedData && (
+                  <>
+                    {/* AI Check Button */}
+                    {isEditing && (
+                        <button
+                        onClick={handleAIReview}
+                        disabled={loading}
+                        className={`px-3 py-1.5 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border shadow-sm ${
+                            loading
+                            ? 'bg-gray-600 text-gray-300 border-gray-500'
+                            : 'bg-brand-blue text-white border-brand-blue hover:bg-brand-blue/90'
+                        }`}
+                        >
+                        {loading ? (
+                            <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        ) : (
+                            <>
+                            <Sparkles size={14} className="mr-1.5" />
+                            <span>{t.navCheck}</span>
+                            </>
+                        )}
+                        </button>
+                    )}
+                    
+                    {/* Translate Button */}
+                    {!isEditing && (
+                        <button
+                        onClick={handleTranslateContent}
+                        disabled={translating}
+                        className={`px-3 py-1.5 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border border-purple-300 bg-purple-50 text-purple-700 hover:bg-purple-100 shadow-sm`}
+                        title={language === 'es' ? "Traducir todo" : "Dena itzuli"}
+                        >
+                        {translating ? (
+                            <svg className="animate-spin h-4 w-4 text-purple-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        ) : (
+                            <>
+                                <Languages size={14} className="mr-1.5" />
+                                <span>{language === 'es' ? 'Traducir' : 'Itzuli'}</span>
+                            </>
+                        )}
+                        </button>
+                    )}
 
-                 {/* Translate Content */}
-                 {!isEditing && (
+                    {/* Edit/Save Toggle */}
                     <button
-                    onClick={handleTranslateContent}
-                    disabled={translating}
-                    className={`px-3 py-2 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border border-purple-400/50 hover:border-purple-400 text-white hover:bg-purple-900/40`}
-                    title={language === 'es' ? "Traducir contenido al Euskera" : "Edukia Gaztelaniara itzuli"}
+                      onClick={() => setIsEditing(!isEditing)}
+                      className={`px-3 py-1.5 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border shadow-sm ${
+                        isEditing 
+                          ? 'bg-brand-main text-white border-brand-main shadow-inner' 
+                          : 'bg-white text-brand-dark border-gray-300 hover:bg-gray-50'
+                      }`}
+                      title={isEditing ? 'Guardar' : 'Editar'}
                     >
-                    {translating ? (
-                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                    ) : (
-                        <Languages size={16} />
-                    )}
+                      {isEditing ? (
+                          <>
+                              <Save size={14} className="mr-1.5" />
+                              <span>Guardar</span>
+                          </>
+                      ) : (
+                          <>
+                              <Pencil size={14} className="mr-1.5" />
+                              <span>Editar</span>
+                          </>
+                      )}
                     </button>
+                  </>
                 )}
+             </div>
 
-                {/* Markdown Download */}
-                <button
-                  onClick={handleDownloadMarkdown}
-                  className="px-3 py-2 rounded-sm text-white/80 hover:text-white hover:bg-white/10 text-xs font-bold flex items-center transition-colors uppercase tracking-widest border border-transparent hover:border-white/20"
-                  title="Descargar Markdown"
-                >
-                  <FileDown size={16} />
-                </button>
+             {/* ROW 2: Exports & Navigation (Only show if data exists) */}
+             {generatedData && (
+                <div className="flex flex-wrap justify-center lg:justify-end items-center gap-2">
+                    {/* PDF Download */}
+                    <button 
+                      onClick={handleDownloadPDF}
+                      disabled={isDownloading}
+                      className={`px-3 py-1.5 rounded-sm bg-brand-teal text-white text-xs font-bold flex items-center shadow-md transition-all uppercase tracking-widest ${isDownloading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-brand-teal/90'}`}
+                    >
+                      {isDownloading ? (
+                          <svg className="animate-spin h-3 w-3 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                      ) : (
+                          <>
+                              <Download size={14} className="mr-1.5" /> 
+                              <span>PDF</span>
+                          </>
+                      )}
+                    </button>
+                    
+                    {/* Markdown Download */}
+                    <button
+                      onClick={handleDownloadMarkdown}
+                      className="px-3 py-1.5 rounded-sm bg-brand-dark text-white text-xs font-bold flex items-center shadow-md transition-all uppercase tracking-widest hover:bg-brand-black"
+                      title="Descargar Markdown"
+                    >
+                      <FileDown size={14} className="mr-1.5" />
+                      <span>MD</span>
+                    </button>
+                    
+                    <div className="h-4 w-px bg-brand-dark/20 mx-1 hidden lg:block"></div>
 
-                {/* PDF Download */}
-                <button 
-                  onClick={handleDownloadPDF}
-                  disabled={isDownloading}
-                  className={`px-4 py-2 rounded-sm bg-brand-teal text-white text-xs font-bold flex items-center shadow-md transition-all uppercase tracking-widest hover:shadow-lg ${isDownloading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-opacity-90'}`}
-                  title={t.navDownload}
-                >
-                  {isDownloading ? (
-                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                  ) : (
-                      <>
-                          <Download size={14} className="mr-2" /> 
-                          <span className="hidden md:inline">PDF</span>
-                      </>
-                  )}
-                </button>
-                
-                {/* Back Home */}
-                <button 
-                  onClick={handleReset}
-                  className="px-2 py-2 text-white/60 hover:text-white transition-colors"
-                  title={t.navHome}
-                >
-                  <ArrowLeft size={18} />
-                </button>
-              </>
-            )}
+                    {/* Back Home */}
+                    <button 
+                      onClick={handleReset}
+                      className="px-3 py-1.5 rounded-sm border border-gray-300 bg-white text-gray-600 hover:text-brand-dark hover:border-brand-dark transition-all text-xs font-bold uppercase tracking-widest flex items-center"
+                      title={t.navHome}
+                    >
+                      <ArrowLeft size={14} className="mr-1" />
+                      <span>{t.navHome}</span>
+                    </button>
+                </div>
+             )}
           </div>
+
         </div>
       </nav>
 
@@ -682,7 +725,7 @@ ${d.bibliography}
       <footer className="bg-brand-dark border-t border-brand-black py-10 no-print mt-auto text-white">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="text-brand-teal text-sm font-bold uppercase tracking-widest mb-2">
-            Ikasnova GenAI
+            SdA - Navarra
           </p>
           <p className="text-xs text-gray-400 max-w-md mx-auto leading-relaxed">
             {t.footerText}

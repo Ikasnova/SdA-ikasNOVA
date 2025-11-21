@@ -3,7 +3,7 @@ import { LearningSituationData, Language, Activity } from '../types';
 import { TRANSLATIONS } from '../constants';
 import { Users, Plus, Trash2, Check, X, Sparkles } from 'lucide-react';
 
-// --- Helper Components (Defined outside to prevent re-render focus loss) ---
+// --- Helper Components ---
 
 interface AutoResizeTextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
   value: string;
@@ -24,7 +24,7 @@ const AutoResizeTextarea: React.FC<AutoResizeTextareaProps> = ({ value, classNam
     <textarea
       ref={textareaRef}
       value={value}
-      className={`w-full bg-brand-bg/50 hover:bg-brand-bg focus:bg-white border-b-2 border-brand-blue/30 focus:border-brand-blue outline-none transition-colors resize-none overflow-hidden placeholder-gray-400 text-brand-dark py-1 px-1 ${className}`}
+      className={`w-full bg-brand-bg/50 hover:bg-brand-bg focus:bg-white border-b border-transparent focus:border-brand-blue outline-none transition-colors resize-none overflow-hidden placeholder-gray-400 text-brand-dark py-0.5 px-1 ${className}`}
       {...props}
     />
   );
@@ -40,47 +40,29 @@ interface SuggestionBoxProps {
 }
 
 const SuggestionBox: React.FC<SuggestionBoxProps> = ({ original, suggestion, onAccept, onReject, language }) => {
-    const t = TRANSLATIONS[language];
-    
-    // Helper to format lists for display
     const formatContent = (content: string | string[]) => {
         if (Array.isArray(content)) return content.join(', ');
         return content;
     };
-
     const suggestedText = formatContent(suggestion);
     const originalText = formatContent(original);
-
-    // Don't show if identical (sanity check)
     if (suggestedText.trim() === originalText.trim()) return null;
 
     return (
-        <div className="mt-2 mb-4 bg-amber-50 border border-amber-200 rounded-md p-3 relative group animate-fade-in">
-            <div className="absolute -top-2.5 left-2 bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center border border-amber-200 uppercase tracking-wider">
+        <div className="my-2 bg-amber-50 border border-amber-200 rounded p-2 relative group break-inside-avoid">
+            <div className="text-[10px] text-amber-800 font-bold uppercase flex items-center mb-1">
                 <Sparkles size={10} className="mr-1" />
                 {language === 'es' ? 'Sugerencia IA' : 'AA Proposamena'}
             </div>
-            
-            <div className="text-xs text-brand-dark/80 italic mb-2 mt-1 font-light">
+            <div className="text-xs text-brand-dark/80 italic mb-2 font-light leading-tight">
                 {suggestedText}
             </div>
-            
             <div className="flex gap-2 justify-end">
-                 <button 
-                    onClick={onReject}
-                    className="flex items-center bg-white border border-red-200 text-red-600 px-2 py-1 rounded text-[10px] font-bold uppercase hover:bg-red-50 transition-colors"
-                    title={language === 'es' ? 'Rechazar' : 'Baztertu'}
-                >
-                    <X size={12} className="mr-1" />
-                    {language === 'es' ? 'Descartar' : 'Baztertu'}
+                 <button onClick={onReject} className="flex items-center bg-white border border-red-200 text-red-600 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase hover:bg-red-50">
+                    <X size={10} className="mr-1" /> {language === 'es' ? 'No' : 'Ez'}
                 </button>
-                <button 
-                    onClick={onAccept}
-                    className="flex items-center bg-brand-teal text-white px-3 py-1 rounded text-[10px] font-bold uppercase hover:bg-brand-teal/90 shadow-sm transition-all"
-                    title={language === 'es' ? 'Aceptar' : 'Onartu'}
-                >
-                    <Check size={12} className="mr-1" />
-                    {language === 'es' ? 'Aplicar' : 'Aplikatu'}
+                <button onClick={onAccept} className="flex items-center bg-brand-teal text-white px-2 py-0.5 rounded text-[9px] font-bold uppercase hover:bg-brand-teal/90">
+                    <Check size={10} className="mr-1" /> {language === 'es' ? 'Sí' : 'Bai'}
                 </button>
             </div>
         </div>
@@ -88,14 +70,14 @@ const SuggestionBox: React.FC<SuggestionBoxProps> = ({ original, suggestion, onA
 };
 
 const SectionTitle = ({ number, title }: { number: string; title: string }) => (
-  <div className="bg-brand-dark text-white font-bold p-2 text-sm mt-6 first:mt-0 print:bg-brand-dark print:text-white print:border-gray-400 uppercase tracking-wider flex items-center break-inside-avoid break-after-avoid">
-    <div className="bg-brand-teal text-white w-6 h-6 flex items-center justify-center rounded-sm mr-3 text-xs font-black">{number}</div>
+  <div className="col-span-full bg-brand-dark text-white font-bold p-1.5 text-sm uppercase tracking-wider flex items-center break-after-avoid mt-4 first:mt-0">
+    <div className="bg-brand-teal text-white w-5 h-5 flex items-center justify-center rounded-sm mr-2 text-xs font-black">{number}</div>
     {title}
   </div>
 );
 
-const FieldLabel = ({ text, className = "" }: { text: string; className?: string }) => (
-  <div className={`font-bold text-brand-dark text-xs uppercase tracking-wide mb-2 border-b-2 border-brand-teal/20 pb-1 w-full ${className}`}>{text}</div>
+const FieldLabel = ({ text }: { text: string }) => (
+  <div className="font-bold text-brand-dark text-[10px] uppercase tracking-wide mb-1 leading-none opacity-70">{text}</div>
 );
 
 // --- Main Component ---
@@ -121,8 +103,7 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
 }) => {
   const t = TRANSLATIONS[language];
 
-  // --- Update Handlers ---
-
+  // --- Update Handlers (Same logic) ---
   const handleChange = (field: keyof LearningSituationData, value: string) => {
     if (!onUpdate) return;
     onUpdate({ ...data, [field]: value });
@@ -130,7 +111,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
 
   const handleListChange = (field: keyof LearningSituationData, value: string) => {
     if (!onUpdate) return;
-    // Keep empty lines to allow user to space things out if they want
     const list = value.split('\n'); 
     onUpdate({ ...data, [field]: list });
   };
@@ -144,39 +124,17 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
 
   const handleAddActivity = () => {
     if (!onUpdate) return;
-    const newActivity: Activity = {
-      description: "",
-      sessions: "",
-      grouping: "",
-      resources: "",
-      evaluableProducts: "",
-      evalTools: ""
-    };
-    onUpdate({ ...data, activities: [...data.activities, newActivity] });
+    onUpdate({ ...data, activities: [...data.activities, { description: "", sessions: "", grouping: "", resources: "", evaluableProducts: "", evalTools: "" }] });
   };
 
   const handleRemoveActivity = (index: number) => {
     if (!onUpdate) return;
-    const newActivities = data.activities.filter((_, i) => i !== index);
-    onUpdate({ ...data, activities: newActivities });
+    onUpdate({ ...data, activities: data.activities.filter((_, i) => i !== index) });
   };
 
-  // --- Render Helpers ---
+  // --- Render Helpers optimized for Density ---
 
-  const renderEditableText = ({ 
-    text, 
-    field, 
-    className = "",
-    isHeader = false,
-    placeholder = ""
-  }: { 
-    text: string; 
-    field?: keyof LearningSituationData; 
-    className?: string;
-    isHeader?: boolean;
-    placeholder?: string;
-  }) => {
-    // Check for suggestions on this field
+  const renderText = (text: string, field?: keyof LearningSituationData, placeholder?: string, className: string = "text-xs") => {
     const hasSuggestion = isEditing && suggestions && field && suggestions[field] !== undefined;
     const suggestionValue = hasSuggestion ? suggestions![field] : null;
 
@@ -187,81 +145,42 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
                 value={text}
                 onChange={(e) => handleChange(field, e.target.value)}
                 placeholder={placeholder}
-                className={`${isHeader ? 'text-xl font-bold' : 'text-sm font-light'} ${className}`}
+                className={`font-light leading-tight ${className}`}
             />
-            {hasSuggestion && onAcceptSuggestion && onRejectSuggestion && (
-                <SuggestionBox 
-                    original={text}
-                    suggestion={suggestionValue as string}
-                    language={language}
-                    onAccept={() => onAcceptSuggestion(field, suggestionValue)}
-                    onReject={() => onRejectSuggestion(field)}
-                />
+            {hasSuggestion && (
+                <SuggestionBox original={text} suggestion={suggestionValue as string} language={language} onAccept={() => onAcceptSuggestion?.(field, suggestionValue)} onReject={() => onRejectSuggestion?.(field)} />
             )}
         </div>
       );
     }
-    return <div className={`text-brand-black whitespace-pre-wrap leading-relaxed text-justify ${isHeader ? '' : 'text-sm font-light'} ${className}`}>{text || <span className="text-gray-300 italic text-xs opacity-50">Empty / Vacío</span>}</div>;
+    return <div className={`whitespace-pre-wrap text-brand-black leading-snug text-justify ${className}`}>{text || <span className="opacity-20 italic">--</span>}</div>;
   };
 
-  const renderEditableList = ({ 
-    items, 
-    field, 
-    type = "bullet",
-    placeholder = ""
-  }: { 
-    items: string[]; 
-    field: keyof LearningSituationData; 
-    type?: "bullet" | "striped";
-    placeholder?: string;
-  }) => {
-    
-    // Check for suggestions (Lists are treated as a whole block replacement for simplicity)
+  const renderList = (items: string[], field: keyof LearningSituationData, placeholder?: string) => {
     const hasSuggestion = isEditing && suggestions && suggestions[field] !== undefined;
     const suggestionValue = hasSuggestion ? suggestions![field] : null;
 
     if (isEditing && onUpdate) {
-        const joinedText = items.join('\n');
         return (
             <div className="w-full">
                 <AutoResizeTextarea
-                    value={joinedText}
+                    value={items.join('\n')}
                     onChange={(e) => handleListChange(field, e.target.value)}
-                    className="text-sm font-light min-h-[6em]"
+                    className="text-xs font-light leading-tight min-h-[4em]"
                     placeholder={placeholder || t.phList}
                 />
-                {hasSuggestion && onAcceptSuggestion && onRejectSuggestion && (
-                    <SuggestionBox 
-                        original={items}
-                        suggestion={suggestionValue as string[]}
-                        language={language}
-                        onAccept={() => onAcceptSuggestion(field, suggestionValue)}
-                        onReject={() => onRejectSuggestion(field)}
-                    />
+                {hasSuggestion && (
+                    <SuggestionBox original={items} suggestion={suggestionValue as string[]} language={language} onAccept={() => onAcceptSuggestion?.(field, suggestionValue)} onReject={() => onRejectSuggestion?.(field)} />
                 )}
             </div>
         );
     }
-
-    if (!items || items.length === 0) return <span className="text-gray-300 italic text-xs opacity-50">Empty / Vacío</span>;
-    
-    if (type === "striped") {
-      return (
-        <div className="flex flex-col w-full border border-brand-border rounded-sm overflow-hidden">
-          {items.map((item, idx) => (
-            <div key={idx} className="p-2 text-xs text-brand-black bg-white border-b border-brand-border last:border-0 even:bg-brand-light/50">
-              {item}
-            </div>
-          ))}
-        </div>
-      );
-    }
-
+    if (!items || items.length === 0) return <span className="opacity-20 italic text-xs">--</span>;
     return (
-      <ul className="list-none w-full space-y-2">
+      <ul className="list-none space-y-1 m-0 p-0">
         {items.map((item, idx) => (
-          <li key={idx} className="relative pl-4 text-sm text-brand-black leading-snug">
-             <span className="absolute left-0 top-1.5 w-1.5 h-1.5 bg-brand-teal rounded-full"></span>
+          <li key={idx} className="relative pl-3 text-[11px] text-brand-black leading-tight">
+             <span className="absolute left-0 top-1.5 w-1 h-1 bg-brand-dark rounded-full"></span>
              {item}
           </li>
         ))}
@@ -269,308 +188,191 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
     );
   };
 
-  const renderActivityField = (index: number, field: keyof Activity, value: string, placeholder: string, className: string = "") => {
-     const suggestion = isEditing && suggestions && suggestions.activities && suggestions.activities[index] 
-        ? suggestions.activities[index]![field] 
-        : undefined;
-
-     return (
-        <div className="w-full">
-             {isEditing ? (
-                <>
-                    <AutoResizeTextarea
-                        value={value}
-                        onChange={(e) => handleActivityChange(index, field, e.target.value)}
-                        className={className}
-                        placeholder={placeholder}
-                    />
-                    {suggestion && onAcceptSuggestion && onRejectSuggestion && (
-                        <SuggestionBox 
-                            original={value}
-                            suggestion={suggestion}
-                            language={language}
-                            onAccept={() => onAcceptSuggestion('activities', suggestion, index, field)}
-                            onReject={() => onRejectSuggestion('activities', index, field)}
-                        />
-                    )}
-                </>
-             ) : (
-                 <div className={`text-brand-black whitespace-pre-wrap leading-relaxed text-justify ${className.replace('text-xs', 'text-sm')}`}>{value}</div>
-             )}
-        </div>
-     );
-  };
-
   return (
     <div id="document-preview" className="max-w-[210mm] mx-auto bg-white shadow-2xl print:shadow-none print:w-full print:max-w-none p-10 print:p-0 text-brand-black font-sans mb-12">
-      {/* Main Table Border Container */}
-      <div className={`border-4 ${isEditing ? 'border-brand-blue border-dashed' : 'border-brand-dark'} print:border-black transition-all duration-300`}>
+      
+      {/* Modern Grid Table Structure */}
+      <div className={`modern-table-grid ${isEditing ? 'border-brand-blue border-dashed' : ''} bg-white`}>
         
-        {/* Header: Unit & Situation Numbers */}
-        <div className="bg-brand-dark text-white font-bold p-4 flex justify-between items-center print:bg-brand-dark print-color-adjust-exact uppercase tracking-widest border-b border-white break-inside-avoid">
-          <div className="flex flex-col w-1/2">
-            <span className="text-brand-teal text-xs">{t.docHeaderTitle}</span>
-            <div className="flex items-center">
-                <span className="text-lg mr-2">{t.progUnit}</span>
-                {isEditing ? (
-                    <input 
-                        value={data.progUnitNumber} 
-                        onChange={(e) => handleChange('progUnitNumber', e.target.value)}
-                        className="bg-white/10 text-white border-none w-16 p-1 text-center text-lg font-bold focus:bg-white/20 outline-none"
-                        placeholder="#"
-                    />
-                ) : (
-                    <span className="text-lg">{data.progUnitNumber}</span>
-                )}
-            </div>
+        {/* HEADER */}
+        <div className="col-span-full bg-brand-dark text-white p-3 flex justify-between items-center print-color-adjust-exact border-b border-white break-inside-avoid">
+          <div className="flex flex-col">
+             <span className="text-[10px] uppercase tracking-widest text-brand-teal font-bold">{t.docHeaderTitle}</span>
+             <div className="flex items-baseline mt-1">
+                <span className="text-sm font-bold uppercase mr-2">{t.progUnit}:</span>
+                {isEditing ? <input value={data.progUnitNumber} onChange={(e) => handleChange('progUnitNumber', e.target.value)} className="bg-white/10 text-white w-10 text-center font-bold text-sm" /> : <span className="text-lg font-bold">{data.progUnitNumber}</span>}
+             </div>
           </div>
-          <div className="bg-brand-teal px-4 py-2 text-white text-sm font-bold rounded-sm shadow-sm flex items-center">
-            <span className="mr-2">{t.saNumber}</span>
-            {isEditing ? (
-                 <input 
-                    value={data.situationNumber} 
-                    onChange={(e) => handleChange('situationNumber', e.target.value)}
-                    className="bg-white/20 text-white border-none w-16 p-0 text-center font-bold focus:bg-white/30 outline-none"
-                    placeholder="#"
-                />
-            ) : (
-                <span>{data.situationNumber}</span>
-            )}
+          <div className="flex items-center bg-brand-teal/20 px-3 py-1 rounded border border-brand-teal/50">
+             <span className="text-xs font-bold uppercase mr-2 text-brand-teal">{t.saNumber}</span>
+             {isEditing ? <input value={data.situationNumber} onChange={(e) => handleChange('situationNumber', e.target.value)} className="bg-transparent text-white w-10 text-center font-bold text-lg" /> : <span className="text-xl font-bold text-white">{data.situationNumber}</span>}
           </div>
         </div>
 
-        {/* 1. DATOS IDENTIFICATIVOS */}
+        {/* SECTION 1: ID DATA */}
         <SectionTitle number="1" title={t.sec1} />
         
-        <div className="grid grid-cols-1 border-b border-brand-border">
-          <div className="p-4 border-b border-brand-border bg-brand-light/30 break-inside-avoid">
+        <div className="col-span-full p-2 border-b border-brand-border break-inside-avoid bg-gray-50">
             <FieldLabel text={t.fieldTitle} />
-            {renderEditableText({
-                text: data.title, 
-                field: "title", 
-                className: "text-2xl font-bold text-brand-main uppercase tracking-tight", 
-                isHeader: true,
-                placeholder: t.topicPlaceholder
-            })}
-          </div>
-          <div className="grid grid-cols-3 border-b border-brand-border break-inside-avoid">
-            <div className="col-span-2 p-3 border-r border-brand-border">
+            {renderText(data.title, "title", t.topicPlaceholder, "text-lg font-bold uppercase text-brand-main")}
+        </div>
+        
+        <div className="col-span-full grid grid-cols-4 break-inside-avoid">
+            <div className="col-span-3 modern-cell">
                 <FieldLabel text={t.fieldArea} />
-                {renderEditableText({ text: data.stageArea, field: "stageArea", placeholder: t.gradePlaceholder })}
+                {renderText(data.stageArea, "stageArea", t.gradePlaceholder)}
             </div>
-            <div className="p-3">
+            <div className="col-span-1 modern-cell border-r-0">
                 <FieldLabel text={t.fieldTiming} />
-                {renderEditableText({ text: data.timingRelation, field: "timingRelation", placeholder: "Ej: 2 semanas / 6 sesiones" })}
+                {renderText(data.timingRelation, "timingRelation")}
             </div>
-          </div>
-          
-          <div className="p-4 border-b border-brand-border break-inside-avoid">
-            <FieldLabel text={t.fieldGoal} />
-            {renderEditableText({ text: data.descriptionGoal, field: "descriptionGoal", placeholder: t.phGoal })}
-          </div>
-          
-          <div className="grid grid-cols-2 break-inside-avoid">
-             <div className="p-4 border-r border-brand-border">
-                <FieldLabel text={t.fieldLinks} />
-                {renderEditableText({ text: data.linksOtherAreas, field: "linksOtherAreas", placeholder: t.phLinks })}
-             </div>
-             <div className="p-4">
-                <FieldLabel text={t.fieldOds} />
-                {renderEditableText({ text: data.odsChallenges, field: "odsChallenges", placeholder: t.phOds })}
-             </div>
-          </div>
         </div>
 
-        {/* 2. CONEXIÓN CON ELEMENTOS CURRICULARES */}
+        <div className="col-span-full modern-cell border-r-0 break-inside-avoid">
+            <FieldLabel text={t.fieldGoal} />
+            {renderText(data.descriptionGoal, "descriptionGoal", t.phGoal)}
+        </div>
+
+        <div className="col-span-full grid grid-cols-2 break-inside-avoid">
+             <div className="modern-cell">
+                 <FieldLabel text={t.fieldLinks} />
+                 {renderText(data.linksOtherAreas, "linksOtherAreas", t.phLinks)}
+             </div>
+             <div className="modern-cell border-r-0">
+                 <FieldLabel text={t.fieldOds} />
+                 {renderText(data.odsChallenges, "odsChallenges", t.phOds)}
+             </div>
+        </div>
+
+        {/* SECTION 2: CURRICULUM */}
         <SectionTitle number="2" title={t.sec2} />
 
-        <div className="p-4 border-b border-brand-border bg-brand-light/30 break-inside-avoid">
-          <FieldLabel text={t.fieldObj} />
-          {renderEditableList({ items: data.stageObjectives, field: "stageObjectives", type: "bullet" })}
-        </div>
-        <div className="p-4 border-b border-brand-border break-inside-avoid">
-          <FieldLabel text={t.fieldCompKey} />
-          {isEditing ? (
-              renderEditableList({ items: data.keyCompetenciesDescriptors, field: "keyCompetenciesDescriptors", type: "bullet", placeholder: "CCL1, CP2, STEM3..." })
-          ) : (
-            <div className="flex flex-wrap gap-2">
-                {data.keyCompetenciesDescriptors.length > 0 ? data.keyCompetenciesDescriptors.map((k, i) => (
-                    <span key={i} className="bg-brand-border text-brand-dark px-2 py-1 rounded text-xs font-bold">{k}</span>
-                )) : <span className="text-gray-300 italic text-xs">Empty</span>}
-            </div>
-          )}
+        <div className="col-span-full modern-cell border-r-0 break-inside-avoid">
+            <FieldLabel text={t.fieldObj} />
+            {renderList(data.stageObjectives, "stageObjectives")}
         </div>
         
-        <div className="grid grid-cols-2 border-b border-brand-border break-inside-avoid">
-          <div className="border-r border-brand-border p-4">
-             <FieldLabel text={t.fieldCompSpec} className="text-center bg-brand-main text-white py-1 mb-3 border-none rounded-sm" />
-             {renderEditableList({ items: data.specificCompetencies, field: "specificCompetencies", type: "striped" })}
-          </div>
-          <div className="p-4">
-            <FieldLabel text={t.fieldCritEval} className="text-center bg-brand-main text-white py-1 mb-3 border-none rounded-sm" />
-            {renderEditableList({ items: data.evaluationCriteria, field: "evaluationCriteria", type: "striped" })}
-          </div>
-        </div>
-        
-        <div className="p-4 border-b border-brand-border bg-brand-light/30 break-inside-avoid">
-          <FieldLabel text={t.fieldBasicKnow} />
-          {renderEditableList({ items: data.basicKnowledge, field: "basicKnowledge", type: "bullet" })}
+        <div className="col-span-full modern-cell border-r-0 break-inside-avoid">
+             <FieldLabel text={t.fieldCompKey} />
+             {isEditing ? renderList(data.keyCompetenciesDescriptors, "keyCompetenciesDescriptors") : (
+                 <div className="flex flex-wrap gap-1">{data.keyCompetenciesDescriptors.map((k, i) => <span key={i} className="bg-gray-100 border border-gray-300 px-1.5 py-0.5 rounded text-[10px] font-bold">{k}</span>)}</div>
+             )}
         </div>
 
-        {/* 3. METODOLOGÍA */}
+        <div className="col-span-full grid grid-cols-2 break-inside-avoid">
+            <div className="modern-cell bg-brand-light/20">
+                <div className="bg-brand-main text-white text-[10px] font-bold px-2 py-1 uppercase mb-2 text-center">{t.fieldCompSpec}</div>
+                {renderList(data.specificCompetencies, "specificCompetencies")}
+            </div>
+            <div className="modern-cell border-r-0 bg-brand-light/20">
+                <div className="bg-brand-main text-white text-[10px] font-bold px-2 py-1 uppercase mb-2 text-center">{t.fieldCritEval}</div>
+                {renderList(data.evaluationCriteria, "evaluationCriteria")}
+            </div>
+        </div>
+        
+        <div className="col-span-full modern-cell border-r-0 break-inside-avoid">
+            <FieldLabel text={t.fieldBasicKnow} />
+            {renderList(data.basicKnowledge, "basicKnowledge")}
+        </div>
+
+        {/* SECTION 3: METHODOLOGY */}
         <SectionTitle number="3" title={t.sec3} />
         
-        <div className="grid grid-cols-2 border-b border-brand-border break-inside-avoid">
-          <div className="p-3 border-r border-b border-brand-border">
-            <FieldLabel text={t.fieldMethod} />
-            {renderEditableText({ text: data.method, field: "method", placeholder: t.phMethod })}
-          </div>
-          <div className="p-3 border-b border-brand-border">
-            <FieldLabel text={t.fieldModels} />
-            {renderEditableText({ text: data.pedagogicalModels, field: "pedagogicalModels", placeholder: t.phModels })}
-          </div>
-          <div className="p-3 border-r border-brand-border">
-            <FieldLabel text={t.fieldTech} />
-            {renderEditableText({ text: data.techniques, field: "techniques", placeholder: t.phTech })}
-          </div>
-          <div className="p-3">
-            <FieldLabel text={t.fieldDua} />
-            {renderEditableText({ text: data.didacticStrategies, field: "didacticStrategies", placeholder: t.phDua })}
-          </div>
+        <div className="col-span-full grid grid-cols-2 break-inside-avoid">
+             <div className="modern-cell">
+                <FieldLabel text={t.fieldMethod} />
+                {renderText(data.method, "method", t.phMethod)}
+             </div>
+             <div className="modern-cell border-r-0">
+                <FieldLabel text={t.fieldModels} />
+                {renderText(data.pedagogicalModels, "pedagogicalModels", t.phModels)}
+             </div>
+             <div className="modern-cell border-b-0">
+                <FieldLabel text={t.fieldTech} />
+                {renderText(data.techniques, "techniques", t.phTech)}
+             </div>
+             <div className="modern-cell border-r-0 border-b-0">
+                <FieldLabel text={t.fieldDua} />
+                {renderText(data.didacticStrategies, "didacticStrategies", t.phDua)}
+             </div>
         </div>
-
-        {/* 4. SECUENCIACIÓN */}
+        
+        {/* SECTION 4: SEQUENCING */}
         <SectionTitle number="4" title={t.sec4} />
-        
-        {data.activities.map((activity, index) => (
-          <div key={index} className="border-b border-brand-border break-inside-avoid group relative">
-            <div className="bg-brand-dark text-white p-2 px-4 font-bold text-xs flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                 <span className="uppercase tracking-wider">{t.actLabel} {index + 1}</span>
-                 {isEditing && (
-                    <button 
-                        onClick={() => handleRemoveActivity(index)}
-                        className="text-red-300 hover:text-white hover:bg-red-600/50 p-1 rounded transition-all ml-2"
-                        title={t.actRemove}
-                    >
-                        <Trash2 size={14} />
-                    </button>
-                  )}
-              </div>
-              <div className="flex items-center gap-2">
-                {/* Sessions */}
-                {isEditing ? (
-                    <input 
-                    value={activity.sessions} 
-                    onChange={(e) => handleActivityChange(index, 'sessions', e.target.value)}
-                    className="bg-white text-brand-dark px-2 py-0.5 rounded-sm text-[10px] font-bold w-24 text-right placeholder-gray-400"
-                    placeholder="#"
-                />
-                ) : (
-                    <span className="bg-white text-brand-dark px-2 py-0.5 rounded-sm text-[10px] font-bold">{activity.sessions}</span>
-                )}
-              </div>
-            </div>
-            <div className="grid grid-cols-3">
-              {/* Main Description Column */}
-              <div className="col-span-2 p-4 border-r border-brand-border flex flex-col justify-between">
-                <div className="w-full">
-                    <FieldLabel text={t.actDesc} />
-                    {renderActivityField(index, 'description', activity.description, t.phActDesc, "text-sm font-light min-h-[6em]")}
-                </div>
 
-                {/* Grouping Type - Moved Here */}
-                <div className="mt-4 pt-3 border-t border-brand-border/50 flex flex-col justify-center">
-                    <div className="flex items-center mb-1">
-                        <span className="text-xs font-bold uppercase text-brand-main mr-3">{t.actGrouping}:</span>
-                        {isEditing ? (
-                            <input 
-                            value={activity.grouping || ''} 
-                            onChange={(e) => handleActivityChange(index, 'grouping', e.target.value)}
-                            className="bg-brand-bg/50 border-b border-brand-blue/50 text-brand-blue px-2 py-1 rounded-sm text-xs font-bold w-full placeholder-gray-400 italic focus:bg-white outline-none"
-                            placeholder={t.actGrouping}
-                        />
-                        ) : (
-                        activity.grouping && (
-                            <span className="bg-brand-blue text-white px-3 py-1 rounded-sm text-xs font-bold flex items-center shadow-sm">
-                            <Users size={12} className="mr-2" />
-                            {activity.grouping}
-                            </span>
-                        )
-                        )}
+        <div className="col-span-full">
+            {data.activities.map((activity, index) => (
+                <div key={index} className="border border-brand-border mb-2 break-inside-avoid shadow-sm">
+                    {/* Activity Header */}
+                    <div className="bg-gray-100 px-2 py-1 border-b border-brand-border flex justify-between items-center">
+                         <div className="flex items-center gap-2">
+                             <span className="text-xs font-bold uppercase text-brand-dark">{t.actLabel} {index + 1}</span>
+                             {isEditing && <button onClick={() => handleRemoveActivity(index)} className="text-red-400 hover:text-red-600"><Trash2 size={12} /></button>}
+                         </div>
+                         <div className="flex items-center gap-2 text-[10px]">
+                             <span className="font-bold text-brand-main uppercase">{t.actGrouping}:</span>
+                             {isEditing ? <input value={activity.grouping} onChange={(e) => handleActivityChange(index, 'grouping', e.target.value)} className="bg-white border border-gray-300 w-20 px-1" /> : <span>{activity.grouping}</span>}
+                             <span className="text-gray-300">|</span>
+                             <span className="font-bold text-brand-main uppercase">Sesiones:</span>
+                             {isEditing ? <input value={activity.sessions} onChange={(e) => handleActivityChange(index, 'sessions', e.target.value)} className="bg-white border border-gray-300 w-10 px-1 text-center" /> : <span>{activity.sessions}</span>}
+                         </div>
                     </div>
-                    {/* Grouping Suggestion */}
-                     {isEditing && suggestions && suggestions.activities && suggestions.activities[index] && suggestions.activities[index]?.grouping && (
-                        <SuggestionBox 
-                            original={activity.grouping}
-                            suggestion={suggestions.activities[index]!.grouping}
-                            language={language}
-                            onAccept={() => onAcceptSuggestion && onAcceptSuggestion('activities', suggestions.activities![index]!.grouping, index, 'grouping')}
-                            onReject={() => onRejectSuggestion && onRejectSuggestion('activities', index, 'grouping')}
-                        />
-                    )}
+                    {/* Activity Body */}
+                    <div className="grid grid-cols-3">
+                         <div className="col-span-2 p-2 border-r border-brand-border">
+                            <FieldLabel text={t.actDesc} />
+                            {isEditing ? (
+                                <>
+                                <AutoResizeTextarea value={activity.description} onChange={(e) => handleActivityChange(index, 'description', e.target.value)} className="text-xs" placeholder={t.phActDesc} />
+                                {suggestions?.activities?.[index]?.description && <SuggestionBox original={activity.description} suggestion={suggestions.activities[index]!.description} language={language} onAccept={() => onAcceptSuggestion?.('activities', suggestions.activities![index]!.description, index, 'description')} onReject={() => onRejectSuggestion?.('activities', index, 'description')} />}
+                                </>
+                            ) : (
+                                <div className="text-[11px] text-justify leading-tight">{activity.description}</div>
+                            )}
+                         </div>
+                         <div className="col-span-1 grid grid-rows-3">
+                            <div className="p-1 border-b border-brand-border bg-gray-50/50">
+                                <FieldLabel text={t.actRes} />
+                                {isEditing ? <AutoResizeTextarea value={activity.resources} onChange={(e) => handleActivityChange(index, 'resources', e.target.value)} className="text-[10px]" /> : <div className="text-[10px] leading-tight">{activity.resources}</div>}
+                            </div>
+                            <div className="p-1 border-b border-brand-border bg-gray-50/50">
+                                <FieldLabel text={t.actProd} />
+                                {isEditing ? <AutoResizeTextarea value={activity.evaluableProducts} onChange={(e) => handleActivityChange(index, 'evaluableProducts', e.target.value)} className="text-[10px]" /> : <div className="text-[10px] leading-tight">{activity.evaluableProducts}</div>}
+                            </div>
+                             <div className="p-1 bg-gray-50/50">
+                                <FieldLabel text={t.actTools} />
+                                {isEditing ? <AutoResizeTextarea value={activity.evalTools} onChange={(e) => handleActivityChange(index, 'evalTools', e.target.value)} className="text-[10px]" /> : <div className="text-[10px] leading-tight">{activity.evalTools}</div>}
+                            </div>
+                         </div>
+                    </div>
                 </div>
+            ))}
+            {isEditing && <div className="text-center p-2 print:hidden"><button onClick={handleAddActivity} className="text-brand-main text-xs font-bold uppercase border border-brand-main px-3 py-1 rounded hover:bg-brand-main hover:text-white transition"><Plus size={12} className="inline mr-1"/> {t.actAdd}</button></div>}
+        </div>
 
-              </div>
-              {/* Details Column */}
-              <div className="col-span-1 p-3 space-y-3 bg-brand-bg">
-                <div className="border-b border-gray-200 pb-2">
-                  <FieldLabel text={t.actRes} />
-                  {renderActivityField(index, 'resources', activity.resources, t.actRes, "text-xs font-light")}
-                </div>
-                <div className="border-b border-gray-200 pb-2">
-                  <FieldLabel text={t.actProd} />
-                  {renderActivityField(index, 'evaluableProducts', activity.evaluableProducts, t.actProd, "text-xs font-light")}
-                </div>
-                <div>
-                  <FieldLabel text={t.actTools} />
-                  {renderActivityField(index, 'evalTools', activity.evalTools, t.actTools, "text-xs font-light")}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Add Activity Button */}
-        {isEditing && (
-            <div className="p-4 border-b border-brand-border bg-brand-light/20 flex justify-center print:hidden">
-                <button
-                    onClick={handleAddActivity}
-                    className="flex items-center gap-2 text-brand-main font-bold uppercase text-xs tracking-widest hover:text-white hover:bg-brand-main transition-all border border-brand-main px-4 py-2 rounded-sm"
-                >
-                    <Plus size={16} />
-                    {t.actAdd}
-                </button>
-            </div>
-        )}
-
-        {/* 5. EVALUACIÓN DOCENTE */}
+        {/* SECTION 5: EVALUATION */}
         <SectionTitle number="5" title={t.sec5} />
-        <div className="grid grid-cols-2 border-b border-brand-border break-inside-avoid">
-             <div className="p-4 border-r border-brand-border">
+        <div className="col-span-full grid grid-cols-3 break-inside-avoid">
+            <div className="modern-cell">
                 <FieldLabel text={t.fieldDesignEval} />
-                {renderEditableText({ text: data.designEval, field: "designEval", placeholder: "..." })}
-             </div>
-             <div className="p-4">
+                {renderText(data.designEval, "designEval", "...", "text-[10px]")}
+            </div>
+            <div className="modern-cell">
                 <FieldLabel text={t.fieldImplEval} />
-                {renderEditableText({ text: data.implementationEval, field: "implementationEval", placeholder: "..." })}
-             </div>
-        </div>
-        <div className="p-4 border-b border-brand-border bg-brand-light/30 break-inside-avoid">
-          <FieldLabel text={t.fieldImprove} />
-          {renderEditableText({ text: data.improvementProposal, field: "improvementProposal", placeholder: "..." })}
+                {renderText(data.implementationEval, "implementationEval", "...", "text-[10px]")}
+            </div>
+            <div className="modern-cell border-r-0">
+                <FieldLabel text={t.fieldImprove} />
+                {renderText(data.improvementProposal, "improvementProposal", "...", "text-[10px]")}
+            </div>
         </div>
 
-        {/* 6. BIBLIOGRAFÍA */}
+        {/* SECTION 6: BIBLIOGRAPHY */}
         <SectionTitle number="6" title={t.sec6} />
-        <div className="p-4 break-inside-avoid">
-          {renderEditableText({ text: data.bibliography, field: "bibliography", placeholder: "..." })}
+        <div className="col-span-full modern-cell border-r-0 border-b-0 break-inside-avoid">
+            {renderText(data.bibliography, "bibliography", "...", "text-[10px]")}
         </div>
-        
-        <div className="p-4 bg-brand-dark text-white flex justify-between items-center text-xs print:bg-brand-dark print-color-adjust-exact break-inside-avoid">
-            <span className="font-bold uppercase tracking-widest">Ikasnova Generator</span>
-            <span className="opacity-80 font-light">{t.watermark}</span>
-        </div>
+
       </div>
     </div>
   );
