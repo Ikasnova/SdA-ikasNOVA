@@ -204,7 +204,6 @@ const DocumentPreview: React.FC<DocumentPreviewProps> = ({
              </div>
           </div>
           <div className="flex items-center bg-brand-teal/20 px-3 py-1 rounded border border-brand-teal/50">
-             <span className="text-xs font-bold uppercase mr-2 text-brand-teal">{t.saNumber}</span>
              {isEditing ? <input value={data.situationNumber} onChange={(e) => handleChange('situationNumber', e.target.value)} className="bg-transparent text-white w-10 text-center font-bold text-lg" /> : <span className="text-xl font-bold text-white">{data.situationNumber}</span>}
           </div>
         </div>

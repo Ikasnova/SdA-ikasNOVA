@@ -345,8 +345,9 @@ const App: React.FC = () => {
                     pdf.setPage(i);
                     pdf.setFontSize(9);
                     pdf.setTextColor(100, 100, 100);
-                    // Footer text: Just numbers as requested
-                    const text = `${i} / ${totalPages}`;
+                    
+                    // Updated pagination: Only the page number
+                    const text = `${i}`;
                     const pageWidth = pdf.internal.pageSize.getWidth();
                     const textWidth = pdf.getStringUnitWidth(text) * pdf.internal.getFontSize() / pdf.internal.scaleFactor;
                     const x = (pageWidth - textWidth) / 2; // Center

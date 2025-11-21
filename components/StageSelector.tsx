@@ -19,38 +19,28 @@ const StageSelector: React.FC<StageSelectorProps> = ({ onSelect, language }) => 
   ];
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 py-8 animate-fade-in">
-      <div className="text-center mb-8">
-        <h2 className="text-2xl md:text-3xl font-bold text-brand-dark mb-2 tracking-tight uppercase">
+    <div className="w-full max-w-5xl mx-auto px-4 py-8 animate-fade-in">
+      <div className="text-center mb-6">
+        <h2 className="text-2xl font-bold text-brand-dark mb-1 tracking-tight uppercase">
           {t.selectStageTitle}
         </h2>
-        <div className="h-1 w-16 bg-brand-teal mx-auto mb-4"></div>
-        <p className="text-brand-dark text-sm md:text-base font-light opacity-80 max-w-2xl mx-auto">
-          {t.selectStageSubtitle}
-        </p>
+        <div className="h-1 w-12 bg-brand-teal mx-auto mb-3"></div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {stages.map((stage) => (
           <button
             key={stage.id}
             onClick={() => onSelect(stage.id)}
-            className="group relative bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 text-left flex flex-col overflow-hidden border border-gray-100 hover:border-gray-300"
+            className="group bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 text-center flex flex-col overflow-hidden border border-gray-200 hover:border-gray-300 rounded-sm"
           >
             {/* Colored Band */}
             <div className={`h-2 w-full ${stage.color}`}></div>
             
-            <div className="p-4 flex flex-col h-full justify-between">
-              <h3 className="text-sm md:text-base font-bold text-brand-dark group-hover:text-brand-blue transition-colors uppercase tracking-tight leading-tight">
+            <div className="p-4 flex items-center justify-center h-full">
+              <h3 className="text-xs md:text-sm font-bold text-brand-dark group-hover:text-brand-blue transition-colors uppercase tracking-tight">
                 {stage.label}
               </h3>
-              
-              <div className="mt-3 pt-3 border-t border-gray-100 w-full flex justify-between items-end">
-                 <span className="text-[10px] text-gray-400 leading-tight font-light">
-                    {t.officialDecree}
-                </span>
-                <span className={`w-1.5 h-1.5 rounded-full ${stage.color} opacity-20 group-hover:opacity-100 transition-opacity`}></span>
-              </div>
             </div>
           </button>
         ))}
