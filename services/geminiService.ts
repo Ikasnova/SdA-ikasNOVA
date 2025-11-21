@@ -1,3 +1,5 @@
+
+
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 import { EducationalStage, LearningSituationData, Language } from "../types";
 
@@ -81,6 +83,84 @@ const getLocalizedSchema = (lang: Language): Schema => {
       "activities", "designEval", "implementationEval", "improvementProposal", "bibliography"
     ],
   };
+};
+
+/**
+ * GENERATES a full Learning Situation from scratch based on basic inputs.
+ */
+export const generateFullLearningSituation = async (
+  grade: string,
+  subject: string,
+  topic: string,
+  stage: EducationalStage,
+  language: Language
+): Promise<LearningSituationData | null> => {
+  try {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) throw new Error("API Key not found");
+
+    const ai = new GoogleGenAI({ apiKey });
+    const isEu = language === 'eu';
+    const langName = isEu ? "EUSKERA" : "CASTELLANO";
+
+    const systemInstruction = isEu
+      ? `Jardun ezazu Nafarroako Curriculumean (LOMLOE) aditua den aholkulari pedagogiko gisa (${stage} etapa).
+         
+         ZURE EGINKIZUNA:
+         Sortu HUTSETIK Ikaskuntza Egoera OSOA emandako gaiarentzat.
+         
+         ARA UZTZAILEAK:
+         1. HIZKUNTZA: Irteera GUZTIA EUSKARAZ izan behar da.
+         2. ARAUDIA: Erabili Nafarroako Dekretu Ofizialeko Konpetentzia Espezifikoak eta Ebaluazio Irizpideak hitzez hitz.
+         3. SORMENA: Proposatu jarduera berritzaileak eta motibagarriak.`
+      : `Actúa como un asesor pedagógico experto en el currículo oficial de Navarra (LOMLOE) para la etapa ${stage}.
+         
+         TU MISIÓN:
+         Crear DESDE CERO una Situación de Aprendizaje COMPLETA para el tema proporcionado.
+         
+         REGLAS ESTRICTAS:
+         1. IDIOMA: Todo el contenido debe estar en CASTELLANO.
+         2. NORMATIVA: Usa las Competencias Específicas y Criterios de Evaluación literales del Decreto Foral de Navarra.
+         3. CREATIVIDAD: Propón actividades innovadoras, secuenciadas y atractivas.`;
+
+    const userPrompt = isEu
+      ? `
+      Sortu Ikaskuntza Egoera hau:
+      - Maila: ${grade}
+      - Arloa: ${subject}
+      - Gaia/Testuingurua: ${topic}
+      
+      Bete eremu guztiak (JSON) zehaztasun handiz.
+    `
+      : `
+      Genera una Situación de Aprendizaje completa para:
+      - Curso: ${grade}
+      - Asignatura: ${subject}
+      - Tema/Contexto: ${topic}
+      
+      Rellena TODOS los campos del JSON con rigor curricular y calidad didáctica.
+    `;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: userPrompt,
+      config: {
+        systemInstruction: systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: getLocalizedSchema(language),
+        temperature: 0.7, // Higher temperature for creativity in generation
+      },
+    });
+
+    const text = response.text;
+    if (!text) return null;
+
+    return JSON.parse(text) as LearningSituationData;
+
+  } catch (error) {
+    console.error("Error generating full learning situation:", error);
+    throw error;
+  }
 };
 
 /**
@@ -217,3 +297,61 @@ export const translateLearningSituation = async (
       throw error;
     }
   };
+
+/**
+ * EXTRACTS data from an uploaded file (PDF or Image) and fills the schema.
+ */
+export const generateFromUploadedFile = async (
+  base64Data: string,
+  mimeType: string,
+  language: Language
+): Promise<LearningSituationData | null> => {
+  try {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey) throw new Error("API Key not found");
+
+    const ai = new GoogleGenAI({ apiKey });
+    const isEu = language === 'eu';
+    const langName = isEu ? "EUSKERA" : "CASTELLANO";
+
+    const systemInstruction = isEu
+      ? `Zure zeregina da irudi edo PDF honetatik Ikaskuntza Egoera baten datuak ateratzea eta JSON formatuan egituratzea.
+         Jatorrizko testua beste hizkuntza batean badago, itzuli ${langName}ra.
+         Datu bat falta bada, saiatu testuinguruaren arabera ondorioztatzen edo hutsik utzi.`
+      : `Tu misión es extraer los datos de esta Situación de Aprendizaje (imagen o PDF) y estructurarlos en el formato JSON requerido.
+         Si el texto original está en otro idioma, tradúcelo al ${langName}.
+         Si falta algún dato, intenta inferirlo del contexto o déjalo vacío si no hay información suficiente.`;
+
+    const prompt = isEu 
+        ? "Aztertu dokumentu hau eta bete JSON fitxategia dagokion informazioarekin."
+        : "Analiza este documento adjunto y rellena el JSON con la información correspondiente.";
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        {
+          inlineData: {
+            mimeType: mimeType,
+            data: base64Data
+          }
+        },
+        { text: prompt }
+      ],
+      config: {
+        systemInstruction: systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: getLocalizedSchema(language),
+        temperature: 0.4,
+      },
+    });
+
+    const text = response.text;
+    if (!text) return null;
+
+    return JSON.parse(text) as LearningSituationData;
+
+  } catch (error) {
+    console.error("Error extracting from file:", error);
+    throw error;
+  }
+};

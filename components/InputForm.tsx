@@ -1,17 +1,19 @@
+
 import React, { useState } from 'react';
-import { EducationalStage, Language } from '../types';
-import { ArrowRight, Pencil, ArrowLeft } from 'lucide-react';
+import { EducationalStage, Language, GenerationMode } from '../types';
+import { ArrowRight, Pencil, ArrowLeft, Wand2 } from 'lucide-react';
 import { TRANSLATIONS } from '../constants';
 
 interface InputFormProps {
   stage: EducationalStage;
+  mode: GenerationMode;
   onSubmit: (grade: string, subject: string, topic: string) => void;
   onBack: () => void;
   isLoading: boolean;
   language: Language;
 }
 
-const InputForm: React.FC<InputFormProps> = ({ stage, onSubmit, onBack, isLoading, language }) => {
+const InputForm: React.FC<InputFormProps> = ({ stage, mode, onSubmit, onBack, isLoading, language }) => {
   const [grade, setGrade] = useState('');
   const [subject, setSubject] = useState('');
   const [topic, setTopic] = useState('');
@@ -26,11 +28,14 @@ const InputForm: React.FC<InputFormProps> = ({ stage, onSubmit, onBack, isLoadin
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto bg-white shadow-xl border-t-4 border-brand-dark p-12 mt-8">
+    <div className="w-full max-w-3xl mx-auto bg-white shadow-xl border-t-4 border-brand-dark p-12 mt-8 animate-fade-in">
       <div className="flex items-center justify-between mb-10 border-b border-brand-border pb-6">
         <div>
             <h2 className="text-3xl font-bold text-brand-dark uppercase tracking-tight">{t.configTitle}</h2>
-            <p className="text-brand-main text-sm mt-1 font-medium tracking-wide">{t.selectedStage} <span className="text-brand-dark border-b border-brand-teal">{t.stageLabels[stage]}</span></p>
+            <p className="text-brand-main text-sm mt-1 font-medium tracking-wide">
+                {t.selectedStage} <span className="text-brand-dark border-b border-brand-teal mr-3">{t.stageLabels[stage]}</span>
+                <span className="text-gray-400 font-light text-xs uppercase bg-gray-100 px-2 py-1 rounded">{mode === 'auto' ? 'Modo Auto' : 'Modo Manual'}</span>
+            </p>
         </div>
         <button 
             onClick={onBack} 
@@ -92,7 +97,9 @@ const InputForm: React.FC<InputFormProps> = ({ stage, onSubmit, onBack, isLoadin
             className={`w-full flex items-center justify-center space-x-3 py-5 px-6 text-white font-bold text-lg uppercase tracking-widest transition-all rounded-sm ${
                 isLoading 
                 ? 'bg-gray-400 cursor-not-allowed' 
-                : 'bg-brand-dark hover:bg-brand-black shadow-lg hover:shadow-xl'
+                : mode === 'auto' 
+                    ? 'bg-brand-teal hover:bg-brand-main shadow-lg hover:shadow-xl' 
+                    : 'bg-brand-dark hover:bg-brand-black shadow-lg hover:shadow-xl'
             }`}
             >
             {isLoading ? (
@@ -105,8 +112,8 @@ const InputForm: React.FC<InputFormProps> = ({ stage, onSubmit, onBack, isLoadin
                 </>
             ) : (
                 <>
-                <Pencil size={20} className="text-brand-teal" />
-                <span>{t.generateBtn}</span>
+                {mode === 'auto' ? <Wand2 size={20} /> : <Pencil size={20} className="text-brand-teal" />}
+                <span>{mode === 'auto' ? t.generateBtnAuto : t.generateBtnManual}</span>
                 <ArrowRight size={20} />
                 </>
             )}

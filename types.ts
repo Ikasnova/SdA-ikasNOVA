@@ -1,3 +1,4 @@
+
 export enum EducationalStage {
   INFANTIL = "Infantil",
   PRIMARIA = "Primaria",
@@ -7,6 +8,8 @@ export enum EducationalStage {
 }
 
 export type Language = 'es' | 'eu';
+
+export type GenerationMode = 'auto' | 'manual' | 'upload';
 
 export interface Activity {
   description: string;

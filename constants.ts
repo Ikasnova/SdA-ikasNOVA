@@ -1,3 +1,5 @@
+
+
 import { Language } from "./types";
 
 export const TRANSLATIONS = {
@@ -11,6 +13,7 @@ export const TRANSLATIONS = {
     navCheck: "Comprobar con IA",
     navTranslate: "Traducir al Euskera",
     navTranslating: "Traduciendo...",
+    navImporting: "Importando archivo...",
 
     // Stage Selector
     selectStageTitle: "Selección de Etapa Educativa",
@@ -25,6 +28,19 @@ export const TRANSLATIONS = {
       "Formación Profesional": "Formación Profesional"
     },
 
+    // Mode Selector
+    selectModeTitle: "¿Cómo quieres trabajar?",
+    selectModeSubtitle: "Elige la estrategia para crear tu situación de aprendizaje",
+    modeAutoTitle: "Generación Automática (IA)",
+    modeAutoDesc: "Introduce el tema y deja que la IA genere una propuesta completa basada en el currículo. Ideal para inspirarse.",
+    modeAutoBtn: "Autocompletar",
+    modeManualTitle: "Redacción Manual + Corrección",
+    modeManualDesc: "Empieza con la plantilla vacía, escribe tu propuesta y usa la IA solo para revisar y mejorar.",
+    modeManualBtn: "Redactar Manualmente",
+    modeUploadTitle: "Importar Archivo (PDF/Foto)",
+    modeUploadDesc: "Sube una programación antigua o una foto de un libro. La IA extraerá los datos y rellenará la plantilla.",
+    modeUploadBtn: "Subir Documento",
+
     // Input Form
     configTitle: "Datos Iniciales",
     selectedStage: "Etapa seleccionada:",
@@ -35,8 +51,9 @@ export const TRANSLATIONS = {
     subjectPlaceholder: "Ej: Matemáticas",
     topicLabel: "Temática / Contexto",
     topicPlaceholder: "Título o idea principal...",
-    generateBtn: "Comenzar a Rellenar", // Changed from Auto-generate
-    loadingBtn: "Iniciando editor...",
+    generateBtnAuto: "Generar SdA Completa", 
+    generateBtnManual: "Abrir Editor Vacío",
+    loadingBtn: "Procesando...",
 
     // Document Preview
     previewTitle: "Editor de Situación de Aprendizaje",
@@ -112,6 +129,7 @@ export const TRANSLATIONS = {
     navCheck: "AA-rekin Egiaztatu",
     navTranslate: "Gaztelaniara itzuli",
     navTranslating: "Itzultzen...",
+    navImporting: "Fitxategia inportatzen...",
 
     // Stage Selector
     selectStageTitle: "Hezkuntza Etaparen Hautaketa",
@@ -126,6 +144,19 @@ export const TRANSLATIONS = {
       "Formación Profesional": "Lanbide Heziketa"
     },
 
+     // Mode Selector
+    selectModeTitle: "Nola lan egin nahi duzu?",
+    selectModeSubtitle: "Aukeratu zure ikaskuntza egoera sortzeko estrategia",
+    modeAutoTitle: "Sorkuntza Automatikoa (AA)",
+    modeAutoDesc: "Sartu gaia eta utzi AAri curriculumean oinarritutako proposamen osoa sortzen. Ideiak lortzeko aproposa.",
+    modeAutoBtn: "Osatu Automatikoki",
+    modeManualTitle: "Eskuzko Idazketa + Zuzenketa",
+    modeManualDesc: "Hasi txantiloi hutsarekin, idatzi zure proposamena eta erabili AA soilik berrikusteko eta hobetzeko.",
+    modeManualBtn: "Eskuz Idatzi",
+    modeUploadTitle: "Fitxategia Inportatu (PDF/Argazkia)",
+    modeUploadDesc: "Igo programazio zahar bat edo liburu baten argazkia. AAk datuak atera eta txantiloia beteko du.",
+    modeUploadBtn: "Dokumentua Igo",
+
     // Input Form
     configTitle: "Hasierako Datuak",
     selectedStage: "Hautatutako etapa:",
@@ -136,8 +167,9 @@ export const TRANSLATIONS = {
     subjectPlaceholder: "Adib: Matematika",
     topicLabel: "Gaia / Testuingurua",
     topicPlaceholder: "Izenburua edo ideia nagusia...",
-    generateBtn: "Hasi Betetzen",
-    loadingBtn: "Editorea irekitzen...",
+    generateBtnAuto: "Sortu I.E. Osoa",
+    generateBtnManual: "Ireki Editore Hutsa",
+    loadingBtn: "Prozesatzen...",
 
     // Document Preview
     previewTitle: "Ikaskuntza Egoeraren Editorea",

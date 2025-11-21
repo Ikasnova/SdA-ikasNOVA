@@ -1,9 +1,11 @@
+
 import React, { useState } from 'react';
 import StageSelector from './components/StageSelector';
 import InputForm from './components/InputForm';
+import ModeSelector from './components/ModeSelector';
 import DocumentPreview from './components/DocumentPreview';
-import { EducationalStage, LearningSituationData, Language, createEmptyLearningSituation, Activity } from './types';
-import { improveLearningSituation, translateLearningSituation } from './services/geminiService';
+import { EducationalStage, LearningSituationData, Language, createEmptyLearningSituation, Activity, GenerationMode } from './types';
+import { improveLearningSituation, translateLearningSituation, generateFullLearningSituation, generateFromUploadedFile } from './services/geminiService';
 import { Download, ArrowLeft, Sparkles, FileText, Globe, FileDown, Pencil, Save, Languages } from 'lucide-react';
 import { TRANSLATIONS } from './constants';
 
@@ -12,6 +14,7 @@ declare const html2pdf: any;
 
 const App: React.FC = () => {
   const [stage, setStage] = useState<EducationalStage | null>(null);
+  const [mode, setMode] = useState<GenerationMode | null>(null);
   const [generatedData, setGeneratedData] = useState<LearningSituationData | null>(null);
   const [suggestions, setSuggestions] = useState<Partial<LearningSituationData> | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,15 +26,85 @@ const App: React.FC = () => {
 
   const t = TRANSLATIONS[language];
 
-  // Starts Manual Entry Mode with an empty template
-  const handleStartManual = (grade: string, subject: string, topic: string) => {
-    if (!stage) return;
-    const emptyData = createEmptyLearningSituation(grade, subject, topic);
-    setGeneratedData(emptyData);
-    setIsEditing(true); // Default to edit mode for manual entry
-    setLoading(false);
-    setError(null);
-    setSuggestions(null);
+  // Helper: Convert File to Base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        let encoded = reader.result?.toString().replace(/^data:(.*,)?/, '');
+        if (encoded) {
+          if ((encoded.length % 4) > 0) {
+            encoded += '='.repeat(4 - (encoded.length % 4));
+          }
+          resolve(encoded);
+        } else {
+            reject("Failed to encode file");
+        }
+      };
+      reader.onerror = (error) => reject(error);
+    });
+  };
+
+  // Handle File Upload
+  const handleFileUpload = async (file: File) => {
+      setMode('upload');
+      setLoading(true);
+      setError(null);
+
+      try {
+          const base64 = await fileToBase64(file);
+          const mimeType = file.type;
+
+          const result = await generateFromUploadedFile(base64, mimeType, language);
+          if (result) {
+              setGeneratedData(result);
+              setIsEditing(true);
+              setSuggestions(null);
+          } else {
+              setError("No se pudo extraer información del archivo.");
+          }
+
+      } catch (e) {
+          console.error(e);
+          setError("Error al procesar el archivo. Asegúrate de que es un PDF o imagen válido.");
+      } finally {
+          setLoading(false);
+      }
+  };
+
+  // Handles the form submission. Logic depends on Generation Mode.
+  const handleFormSubmit = async (grade: string, subject: string, topic: string) => {
+    if (!stage || !mode) return;
+
+    if (mode === 'manual') {
+        // MANUAL MODE: Create empty template and let user write
+        const emptyData = createEmptyLearningSituation(grade, subject, topic);
+        setGeneratedData(emptyData);
+        setIsEditing(true);
+        setLoading(false);
+        setError(null);
+        setSuggestions(null);
+    } else if (mode === 'auto') {
+        // AUTO MODE: Use AI to generate content from scratch
+        setLoading(true);
+        setError(null);
+        try {
+            const result = await generateFullLearningSituation(grade, subject, topic, stage, language);
+            if (result) {
+                setGeneratedData(result);
+                setIsEditing(false); // Start in view mode to admire the creation
+                setSuggestions(null);
+            } else {
+                setError("No se pudo generar el contenido. Por favor, inténtalo de nuevo.");
+            }
+        } catch (e) {
+            console.error(e);
+            setError("Error al conectar con la IA. Verifica tu conexión o la clave API.");
+        } finally {
+            setLoading(false);
+        }
+    }
   };
 
   // Sends the current (potentially partially filled) data to Gemini for review/completion
@@ -135,7 +208,8 @@ const App: React.FC = () => {
         } else {
             setSuggestions(null);
         }
-        setIsEditing(true); // Ensure we stay in edit mode to see suggestions
+        // Keep editing mode on if we just improved manually written text
+        setIsEditing(true);
       } else {
         setError("No se pudo completar la revisión. Inténtalo de nuevo.");
       }
@@ -347,6 +421,7 @@ ${d.bibliography}
   const handleReset = () => {
     setGeneratedData(null);
     setStage(null);
+    setMode(null);
     setError(null);
     setIsEditing(false);
     setSuggestions(null);
@@ -358,101 +433,121 @@ ${d.bibliography}
 
   return (
     <div className="min-h-screen flex flex-col bg-brand-light text-brand-dark font-sans">
-      {/* Navbar - Hide on print */}
-      <nav className="bg-brand-dark py-6 px-8 shadow-xl no-print sticky top-0 z-50 border-b-4 border-brand-main">
-        <div className="max-w-7xl mx-auto flex flex-col xl:flex-row justify-between items-center gap-4">
-          <div className="flex items-center space-x-4 text-white">
-            <div className="bg-white/10 p-2 rounded-sm border border-white/20">
-                <FileText size={24} className="text-brand-teal" />
-            </div>
-            <div className="flex flex-col">
-                <span className="text-2xl font-bold tracking-widest leading-none">IKASNOVA</span>
-                <span className="text-[10px] text-brand-border font-light tracking-[0.2em] uppercase mt-1">{t.appTitle}</span>
-            </div>
+      {/* Navbar - Modified with Gradient and Logo */}
+      <nav className="bg-gradient-to-r from-white from-20% via-[#e6eef5] to-brand-dark py-4 px-6 shadow-xl no-print sticky top-0 z-50 border-b-4 border-brand-teal">
+        <div className="max-w-[98%] w-full mx-auto flex flex-col lg:flex-row items-center justify-between relative gap-4">
+          
+          {/* Left: Logo (Exact Image) */}
+          <div className="z-10 w-full lg:w-1/3 flex justify-center lg:justify-start">
+             <div className="cursor-pointer" onClick={handleReset}>
+                 <img 
+                    src="/logo.png" 
+                    alt="Ikasnova Logo" 
+                    className="h-12 md:h-16 object-contain"
+                    onError={(e) => {
+                        // If image fails, hide it and show simple fallback text
+                        e.currentTarget.style.display = 'none';
+                        const fb = document.getElementById('logo-fallback');
+                        if(fb) fb.style.display = 'flex';
+                    }}
+                />
+                <div id="logo-fallback" className="hidden flex items-baseline text-brand-dark">
+                    <span className="font-serif text-4xl font-bold tracking-tighter">ikas</span>
+                    <span className="font-serif text-4xl font-black tracking-tighter uppercase">NOVA</span>
+                </div>
+             </div>
           </div>
           
-          <div className="flex items-center space-x-2 sm:space-x-4 flex-wrap justify-center">
+          {/* Center: Title */}
+          <div className="z-0 w-full lg:w-auto text-center lg:absolute lg:left-1/2 lg:top-1/2 lg:transform lg:-translate-x-1/2 lg:-translate-y-1/2">
+             <h1 className="text-xl md:text-2xl font-black text-brand-dark uppercase tracking-widest drop-shadow-sm whitespace-nowrap">
+                {t.appTitle}
+             </h1>
+          </div>
+          
+          {/* Right: Tools */}
+          <div className="z-10 w-full lg:w-1/3 flex items-center justify-center lg:justify-end space-x-2 flex-wrap">
             {/* Language Toggle */}
             <button 
               onClick={toggleLanguage}
-              className="flex items-center space-x-3 bg-brand-black/30 hover:bg-brand-black/50 text-white px-3 py-2 rounded-sm border border-white/10 transition-all cursor-pointer group"
+              className="flex items-center space-x-2 bg-brand-black/30 hover:bg-brand-black/50 text-white px-3 py-2 rounded-sm border border-white/10 transition-all cursor-pointer group"
               title="Aldatu hizkuntza / Cambiar idioma"
             >
-              <Globe size={18} className="text-brand-teal group-hover:rotate-12 transition-transform" />
+              <Globe size={16} className="text-brand-teal group-hover:rotate-12 transition-transform" />
               <div className="flex text-xs font-bold uppercase tracking-wider">
-                <span className={`transition-opacity ${language === 'es' ? 'opacity-100 text-white font-black' : 'opacity-50 text-gray-400'}`}>ES</span>
-                <span className="mx-2 text-gray-600">|</span>
-                <span className={`transition-opacity ${language === 'eu' ? 'opacity-100 text-white font-black' : 'opacity-50 text-gray-400'}`}>EU</span>
+                <span className={`transition-opacity ${language === 'es' ? 'opacity-100 text-white font-black' : 'opacity-50 text-gray-300'}`}>ES</span>
+                <span className="mx-1 text-gray-400">|</span>
+                <span className={`transition-opacity ${language === 'eu' ? 'opacity-100 text-white font-black' : 'opacity-50 text-gray-300'}`}>EU</span>
               </div>
             </button>
 
+            {loading && mode === 'upload' && (
+                 <div className="px-3 py-2 rounded-sm bg-purple-600 text-white text-xs font-bold flex items-center uppercase tracking-widest shadow-md animate-pulse">
+                     <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    {t.navImporting}
+                 </div>
+            )}
+
             {generatedData && (
               <>
-                <div className="h-6 w-px bg-white/20 mx-2 hidden sm:block"></div>
+                <div className="h-6 w-px bg-white/20 mx-1 hidden sm:block"></div>
                 
-                {/* AI Check Button (NEW) */}
+                {/* AI Check Button */}
                 {isEditing && (
                     <button
                     onClick={handleAIReview}
                     disabled={loading}
-                    className={`px-4 py-2 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border shadow-md ${
+                    className={`px-3 py-2 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border shadow-md ${
                         loading
                         ? 'bg-gray-600 text-gray-300 border-gray-500'
-                        : 'bg-gradient-to-r from-brand-teal to-brand-blue text-white border-brand-blue hover:shadow-lg hover:scale-105'
+                        : 'bg-brand-blue text-white border-brand-blue hover:bg-brand-blue/90'
                     }`}
                     >
                     {loading ? (
-                        <>
-                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        {t.navChecking}
-                        </>
                     ) : (
                         <>
                         <Sparkles size={14} className="mr-2" />
-                        {t.navCheck}
+                        <span className="hidden xl:inline">{t.navCheck}</span>
                         </>
                     )}
                     </button>
                 )}
 
-
                 {/* Edit Mode Toggle */}
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className={`px-4 py-2 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border ${
+                  className={`px-3 py-2 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border ${
                     isEditing 
                       ? 'bg-brand-main text-white border-brand-main shadow-inner' 
-                      : 'bg-transparent text-gray-300 border-gray-500 hover:bg-white/10 hover:text-white'
+                      : 'bg-white/20 text-white border-white/30 hover:bg-white/30'
                   }`}
+                  title={isEditing ? 'Guardar' : 'Editar'}
                 >
-                  {isEditing ? <Save size={14} className="mr-2" /> : <Pencil size={14} className="mr-2" />}
-                  {isEditing ? 'Guardar' : 'Editar'}
+                  {isEditing ? <Save size={14} /> : <Pencil size={14} />}
                 </button>
 
-                 {/* Translate Content (Visible only in View Mode) */}
+                 {/* Translate Content */}
                  {!isEditing && (
                     <button
                     onClick={handleTranslateContent}
                     disabled={translating}
-                    className={`px-4 py-2 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border border-purple-400/30 hover:border-purple-400 text-purple-200 hover:text-white hover:bg-purple-900/20`}
+                    className={`px-3 py-2 rounded-sm text-xs font-bold flex items-center transition-all uppercase tracking-widest border border-purple-400/50 hover:border-purple-400 text-white hover:bg-purple-900/40`}
                     title={language === 'es' ? "Traducir contenido al Euskera" : "Edukia Gaztelaniara itzuli"}
                     >
                     {translating ? (
-                        <>
-                         <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        {t.navTranslating}
-                        </>
                     ) : (
-                        <>
-                        <Languages size={16} className="mr-2" />
-                        {t.navTranslate}
-                        </>
+                        <Languages size={16} />
                     )}
                     </button>
                 )}
@@ -460,8 +555,8 @@ ${d.bibliography}
                 {/* Markdown Download */}
                 <button
                   onClick={handleDownloadMarkdown}
-                  className="px-3 py-2 rounded-sm text-gray-300 hover:text-white hover:bg-white/10 text-xs font-bold flex items-center transition-colors uppercase tracking-widest border border-transparent hover:border-white/20"
-                  title="Descargar Markdown Editable"
+                  className="px-3 py-2 rounded-sm text-white/80 hover:text-white hover:bg-white/10 text-xs font-bold flex items-center transition-colors uppercase tracking-widest border border-transparent hover:border-white/20"
+                  title="Descargar Markdown"
                 >
                   <FileDown size={16} />
                 </button>
@@ -470,19 +565,18 @@ ${d.bibliography}
                 <button 
                   onClick={handleDownloadPDF}
                   disabled={isDownloading}
-                  className={`px-6 py-2 rounded-sm bg-brand-teal text-white text-xs font-bold flex items-center shadow-md transition-all uppercase tracking-widest hover:shadow-lg ${isDownloading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-opacity-90'}`}
+                  className={`px-4 py-2 rounded-sm bg-brand-teal text-white text-xs font-bold flex items-center shadow-md transition-all uppercase tracking-widest hover:shadow-lg ${isDownloading ? 'opacity-75 cursor-not-allowed' : 'hover:bg-opacity-90'}`}
+                  title={t.navDownload}
                 >
                   {isDownloading ? (
-                      <>
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          {t.navGenerating}
-                      </>
+                      <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
                   ) : (
                       <>
-                          <Download size={14} className="mr-2" /> {t.navDownload}
+                          <Download size={14} className="mr-2" /> 
+                          <span className="hidden md:inline">PDF</span>
                       </>
                   )}
                 </button>
@@ -490,7 +584,7 @@ ${d.bibliography}
                 {/* Back Home */}
                 <button 
                   onClick={handleReset}
-                  className="px-2 py-2 text-gray-400 hover:text-white transition-colors"
+                  className="px-2 py-2 text-white/60 hover:text-white transition-colors"
                   title={t.navHome}
                 >
                   <ArrowLeft size={18} />
@@ -520,15 +614,36 @@ ${d.bibliography}
         {/* View Logic */}
         <div className="animate-fade-in">
             {!stage ? (
-            <StageSelector onSelect={setStage} language={language} />
-            ) : !generatedData ? (
-            <InputForm 
-                stage={stage} 
-                onSubmit={handleStartManual} 
-                onBack={() => setStage(null)}
-                isLoading={loading}
-                language={language}
-            />
+                <StageSelector onSelect={setStage} language={language} />
+            ) : !mode ? (
+                <ModeSelector 
+                    onSelect={setMode} 
+                    onBack={() => setStage(null)} 
+                    onFileUpload={handleFileUpload}
+                    language={language} 
+                />
+            ) : (!generatedData && mode !== 'upload') ? (
+                <InputForm 
+                    stage={stage} 
+                    mode={mode}
+                    onSubmit={handleFormSubmit} 
+                    onBack={() => setMode(null)}
+                    isLoading={loading}
+                    language={language}
+                />
+            ) : (mode === 'upload' && loading && !generatedData) ? (
+                <div className="flex flex-col items-center justify-center h-96 text-brand-dark animate-fade-in">
+                    <div className="relative">
+                        <div className="absolute inset-0 bg-purple-200 rounded-full opacity-50 animate-ping"></div>
+                        <div className="bg-white p-6 rounded-full shadow-xl relative z-10">
+                            <Sparkles size={48} className="text-purple-600 animate-pulse" />
+                        </div>
+                    </div>
+                    <h3 className="mt-8 text-2xl font-bold uppercase tracking-widest">{t.navImporting}</h3>
+                    <p className="mt-2 text-gray-500 max-w-md text-center">
+                        La IA está leyendo el documento, extrayendo la información curricular y estructurándola en la plantilla...
+                    </p>
+                </div>
             ) : (
             <div>
                 <div className="no-print max-w-[210mm] mx-auto mb-6 flex justify-between items-end px-2">
@@ -553,15 +668,17 @@ ${d.bibliography}
                 </div>
 
                 </div>
-                <DocumentPreview 
-                    data={generatedData} 
-                    suggestions={suggestions}
-                    language={language} 
-                    isEditing={isEditing}
-                    onUpdate={handleUpdateData}
-                    onAcceptSuggestion={handleAcceptSuggestion}
-                    onRejectSuggestion={handleRejectSuggestion}
-                />
+                {generatedData && (
+                    <DocumentPreview 
+                        data={generatedData} 
+                        suggestions={suggestions}
+                        language={language} 
+                        isEditing={isEditing}
+                        onUpdate={handleUpdateData}
+                        onAcceptSuggestion={handleAcceptSuggestion}
+                        onRejectSuggestion={handleRejectSuggestion}
+                    />
+                )}
             </div>
             )}
         </div>
